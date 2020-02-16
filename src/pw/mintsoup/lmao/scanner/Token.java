@@ -1,10 +1,10 @@
 package pw.mintsoup.lmao.scanner;
 
 public class Token {
-    final TokenType type;
-    final Object literal;
-    String lex;
-    int line;
+    public final TokenType type;
+    public final Object literal;
+    public final String lex;
+    public final int line;
 
     public Token(TokenType type, Object literal, String lex, int line) {
         this.type = type;
@@ -22,7 +22,6 @@ public class Token {
                     ", lex='" + lex + '\'' +
                     ", line=" + line +
                     '}';
-        }
-        else return "Token{type=" + type + "}";
+        } else return "Token{type=" + type + "}";
     }
 }
