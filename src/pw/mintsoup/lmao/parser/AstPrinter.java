@@ -8,11 +8,13 @@ public class AstPrinter implements Expression.Visitor {
 
     @Override
     public Object visitBinaryExpression(Expression.Binary expression) {
+        System.out.print("[");
         expression.left.accept(this);
         System.out.print(" ");
         System.out.print(expression.operand.lex);
         System.out.print(" ");
         expression.right.accept(this);
+        System.out.print("]");
         return null;
     }
 

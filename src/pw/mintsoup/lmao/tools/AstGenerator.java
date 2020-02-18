@@ -29,7 +29,7 @@ public class AstGenerator {
 
 
         defineVisitors(wrt, baseName, types);
-        wrt.println("abstract <A> A accept(Visitor<A> visitor);");
+        wrt.println("public abstract <A> A accept(Visitor<A> visitor);");
 
 
         for (String type : types) {
@@ -46,7 +46,7 @@ public class AstGenerator {
     }
 
     private static void defineVisitors(PrintWriter wrt, String baseName, List<String> types) {
-        wrt.println("  interface Visitor<R> {");
+        wrt.println(" public interface Visitor<R> {");
         for (String type : types) {
             String typeName = type.split(":")[0].trim();
             wrt.println("    R visit" + typeName + baseName + "(" +
@@ -56,10 +56,10 @@ public class AstGenerator {
     }
 
     private static void defineType(PrintWriter wrt, String baseName, String className, String fields) {
-        wrt.println("public static class " + className + " extends Expression" +"{");
+        wrt.println("public static class " + className + " extends Expression" + "{");
         for (String expr : fields.split(",")) {
             expr = expr.trim();
-            wrt.println("final " + expr + ";");
+            wrt.println("public final " + expr + ";");
         }
 
         wrt.println("public " + className + "(" + fields + ") {");
@@ -73,7 +73,7 @@ public class AstGenerator {
 
         wrt.println("}");
 
-        wrt.println("<A> A accept(Visitor<A> visitor){");
+        wrt.println("public <A> A accept(Visitor<A> visitor){");
         wrt.println(" return visitor.visit" + className + baseName + "(this);");
         wrt.println("}");
         wrt.println("}");

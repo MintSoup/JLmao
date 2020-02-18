@@ -2,6 +2,7 @@ package pw.mintsoup.lmao;
 
 import pw.mintsoup.lmao.parser.AstPrinter;
 import pw.mintsoup.lmao.parser.Expression;
+import pw.mintsoup.lmao.parser.Parser;
 import pw.mintsoup.lmao.scanner.Scanner;
 import pw.mintsoup.lmao.scanner.Token;
 import pw.mintsoup.lmao.scanner.TokenType;
@@ -21,37 +22,16 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        AstPrinter a = new AstPrinter();
-        a.print(new Expression.Binary(
-                new Expression.Grouping(
-                        new Expression.Binary(
-                                new Expression.Literal(13),
-                                new Expression.Literal(17),
-                                new Token(TokenType.PLUS, null, "+", 0)
-                        )
-                ),
-                new Expression.Grouping(
-                        new Expression.Binary(
-                                new Expression.Literal(12),
-                                new Expression.Unary(
-                                        new Token(TokenType.MINUS, null, "-", 0),
-                                        new Expression.Literal(13.2)
-                                ), new Token(TokenType.PLUS, null, "+", 0)
-                        )
-                ),
-                new Token(TokenType.STAR, null, "-", 0)
-        ));
 
-
-//        if (args.length == 0) {
-//            runPrompt();
-//        } else {
-//            File f = new File(args[0]);
-//            if (!f.exists()) {
-//                System.out.println("Cannot find sourfile " + f.getName());
-//                System.exit(64);
-//            } else runFile(f);
-//        }
+        if (args.length == 0) {
+            runPrompt();
+        } else {
+            File f = new File(args[0]);
+            if (!f.exists()) {
+                System.out.println("Cannot find sourfile " + f.getName());
+                System.exit(64);
+            } else runFile(f);
+        }
 
     }
 
@@ -73,15 +53,16 @@ public class Main {
     }
 
     private static void run(String s) {
+        AstPrinter a = new AstPrinter();
         Scanner scanner = new Scanner(s);
         List<Token> tokens = scanner.scanTokens();
-        for (Token t : tokens) {
-            System.out.println(t);
-        }
+        Parser p = new Parser(tokens);
+        Interpreter i = new Interpreter();
+        System.out.println(p.parse().accept(i));
     }
 
 
-    private static void report(int line, String where, String message) {
+    public static void report(int line, String where, String message) {
         System.err.printf("[ERROR] Line %d, %s: %s\n", line, where, message);
 
     }
@@ -89,7 +70,5 @@ public class Main {
     public static void error(int line, String message) {
         report(line, "", message);
         hadError = true;
-
-
     }
 }
