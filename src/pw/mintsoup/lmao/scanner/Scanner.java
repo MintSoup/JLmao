@@ -35,7 +35,7 @@ public class Scanner {
         keywords.put("super", SUPER);
         keywords.put("this", THIS);
         keywords.put("true", TRUE);
-        keywords.put("var", VAR);
+        keywords.put("let", LET);
         keywords.put("while", WHILE);
     }
 
@@ -151,6 +151,7 @@ public class Scanner {
                 while (true) {
                     if (isAtEnd()) {
                         Main.error(line, "Unterminated string");
+                        throw new ScannerError();
                     }
                     char g = next();
                     if (g == '\"') {
@@ -244,5 +245,8 @@ public class Scanner {
 
     private boolean isDigit(char c) {
         return (c >= '0') && (c <= '9');
+    }
+
+    public class ScannerError extends RuntimeException {
     }
 }

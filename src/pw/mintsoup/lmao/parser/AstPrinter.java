@@ -41,5 +41,15 @@ public class AstPrinter implements Expression.Visitor {
         return null;
     }
 
+    @Override
+    public Object visitVariableExpression(Expression.Variable expression) {
+        return null;
+    }
+
+    @Override
+    public Object visitAssignmentExpression(Expression.Assignment expression) {
+        return null;
+    }
+
 
 }

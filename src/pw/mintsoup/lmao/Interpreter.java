@@ -2,11 +2,39 @@ package pw.mintsoup.lmao;
 
 import org.jetbrains.annotations.NotNull;
 import pw.mintsoup.lmao.parser.Expression;
+import pw.mintsoup.lmao.parser.Statement;
 import pw.mintsoup.lmao.scanner.TokenType;
 
-public class Interpreter implements Expression.Visitor {
+public class Interpreter implements Expression.Visitor<Object>, Statement.Visitor<Void> {
+
     class InterpreterError extends RuntimeException {
     }
+
+    Environment e = new Environment();
+
+
+    @Override
+    public Void visitEStatementStatement(@NotNull Statement.EStatement statement) {
+        statement.e.accept(this);
+        return null;
+    }
+
+    @Override
+    public Void visitPrintStatement(@NotNull Statement.Print statement) {
+        System.out.println(statement.e.accept(this));
+        return null;
+    }
+
+    @Override
+    public Void visitVarStatement(@NotNull Statement.Var statement) {
+        Object init = null;
+        if (statement.init != null) {
+            init = statement.init.accept(this);
+        }
+        e.define(statement.name.lex, init);
+        return null;
+    }
+
 
     private InterpreterError error(int line, String where, String message) {
         Main.report(line, where, message);
@@ -14,7 +42,7 @@ public class Interpreter implements Expression.Visitor {
     }
 
     @Override
-    public Object visitBinaryExpression(@NotNull Expression.Binary expression) {
+    public Object visitBinaryExpression(Expression.Binary expression) {
         Object left = expression.left.accept(this);
         Object right = expression.right.accept(this);
         TokenType operand = expression.operand.type;
@@ -103,17 +131,17 @@ public class Interpreter implements Expression.Visitor {
     }
 
     @Override
-    public Object visitGroupingExpression(Expression.Grouping expression) {
+    public Object visitGroupingExpression(@NotNull Expression.Grouping expression) {
         return expression.expression.accept(this);
     }
 
     @Override
-    public Object visitLiteralExpression(Expression.Literal expression) {
+    public Object visitLiteralExpression(@NotNull Expression.Literal expression) {
         return expression.value;
     }
 
     @Override
-    public Object visitUnaryExpression(Expression.Unary expression) {
+    public Object visitUnaryExpression(@NotNull Expression.Unary expression) {
         Object value = expression.a.accept(this);
 
         if (expression.operand.type == TokenType.NOT) {
@@ -134,5 +162,17 @@ public class Interpreter implements Expression.Visitor {
 
         }
         throw error(expression.operand.line, "", "lmao what");
+    }
+
+    @Override
+    public Object visitVariableExpression(@NotNull Expression.Variable expression) {
+        return e.get(expression.name.lex);
+    }
+
+    @Override
+    public Object visitAssignmentExpression(@NotNull Expression.Assignment expression) {
+        Object val = expression.value.accept(this);
+        e.assign(expression.variable.lex, val);
+        return val;
     }
 }

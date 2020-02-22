@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="JLmao:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/JLmao_jar</output-path>
+    <root id="archive" name="JLmao.jar">
+      <element id="module-output" name="JLmao" />
+    </root>
+  </artifact>
+</component>

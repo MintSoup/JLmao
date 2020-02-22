@@ -8,20 +8,24 @@ import java.util.Arrays;
 import java.util.List;
 
 public class AstGenerator {
-    static String output = "src/pw/mintsoup/lmao/parser";
 
     public static void main(String[] args) throws IOException {
-        defineAST("Expression", (List<String>) Arrays.asList("Binary: Expression left, Expression right, Token operand",
+        defineAST("pw.mintsoup.lmao.parser", "Expression", Arrays.asList("Binary: Expression left, Expression right, Token operand",
                 "Grouping: Expression expression",
                 "Literal: Object value",
-                "Unary: Token operand, Expression a"));
+                "Unary: Token operand, Expression a",
+                "Variable: Token name",
+                "Assignment: Token variable, Expression value"));
+        defineAST("pw.mintsoup.lmao.parser", "Statement", Arrays.asList("EStatement: Expression e",
+                "Print: Expression e",
+                "Var: Token name, Expression init"
+        ));
     }
 
-    private static void defineAST(String baseName, List<String> types) throws FileNotFoundException {
-        FileOutputStream out = new FileOutputStream(output + "/" + baseName + ".java");
-        PrintWriter wrt = new PrintWriter(out);
+    private static void defineAST(String pkg, String baseName, List<String> types) throws FileNotFoundException {
+        PrintWriter wrt = new PrintWriter("src/" + pkg.replace('.', '\\') + "\\" + baseName + ".java");
 
-        wrt.println("package pw.mintsoup.lmao.parser;");
+        wrt.println("package " + pkg + ";");
         wrt.println("import java.util.List;");
         wrt.println("import pw.mintsoup.lmao.scanner.Token;");
 
@@ -56,7 +60,7 @@ public class AstGenerator {
     }
 
     private static void defineType(PrintWriter wrt, String baseName, String className, String fields) {
-        wrt.println("public static class " + className + " extends Expression" + "{");
+        wrt.println("public static class " + className + " extends " + baseName + "{");
         for (String expr : fields.split(",")) {
             expr = expr.trim();
             wrt.println("public final " + expr + ";");

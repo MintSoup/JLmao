@@ -1,10 +1,10 @@
 package pw.mintsoup.lmao.parser;
 
-import jdk.nashorn.internal.runtime.ParserException;
 import pw.mintsoup.lmao.Main;
 import pw.mintsoup.lmao.scanner.Token;
 import pw.mintsoup.lmao.scanner.TokenType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Parser {
@@ -15,21 +15,94 @@ public class Parser {
     private final List<Token> tokens;
     private int current = 0;
     private final AstPrinter printer = new AstPrinter();
+    private final List<Statement> statements = new ArrayList<>();
 
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
     }
 
-    public Expression parse() {
+
+    public List<Statement> parse() {
         try {
-            return expression();
+
+            while (!isAtEnd()) statements.add(declaration());
+            return statements;
         } catch (ParserError e) {
             return null;
         }
     }
 
+    private Statement declaration() {
+        try {
+            if (match(TokenType.LET)) {
+                return varDeclaration();
+
+            } else {
+                return statement();
+
+            }
+        } catch (ParserError e) {
+            skipStatement();
+            return null;
+        }
+    }
+
+    private Statement varDeclaration() {
+        Token name = next();
+        if (name.type != TokenType.IDENTIFIER) {
+            throw error(name, "Expected identifier for variable name.");
+        }
+        Expression init = null;
+        if (match(TokenType.EQUAL)) {
+            init = expression();
+        }
+
+        if (!match(TokenType.SEMICOLON)) {
+            throw error(peek(0), "Expected semicolon after variable declaration");
+        }
+        return new Statement.Var(name, init);
+    }
+
+    private Statement statement() {
+        if (match(TokenType.PRINT)) {
+            Expression f = expression();
+            if (!match(TokenType.SEMICOLON)) {
+                throw error(peek(0), "Excepted ';' after print.");
+            }
+            return new Statement.Print(f);
+        } else return expressionStatement();
+
+    }
+
+    private Statement expressionStatement() {
+        Expression e = expression();
+        if (!match(TokenType.SEMICOLON)) {
+            throw error(peek(0), "Expected ';' after expression");
+        }
+        return new Statement.EStatement(e);
+    }
+
     private Expression expression() {
-        return equality();
+        return assignment();
+    }
+
+    private Expression assignment() {
+        Expression e = equality();
+
+        if (match(TokenType.EQUAL)) {
+            Token equals = peek(0);
+            Expression value = assignment();
+
+            if (e instanceof Expression.Variable) {
+                Token name = ((Expression.Variable) e).name;
+                return new Expression.Assignment(name, value);
+            }
+
+            error(equals, "Invalid assignment target.");
+        }
+
+
+        return e;
     }
 
     private Expression equality() {
@@ -53,6 +126,16 @@ public class Parser {
         return e;
     }
 
+    private Expression addition() {
+        Expression e = multiplication();
+
+        while (match(TokenType.PLUS, TokenType.MINUS)) {
+            Token operator = peek(0);
+            e = new Expression.Binary(e, multiplication(), operator);
+        }
+        return e;
+    }
+
     private Expression multiplication() {
         Expression e = unary();
 
@@ -64,21 +147,9 @@ public class Parser {
         return e;
     }
 
-
-    private Expression addition() {
-        Expression e = multiplication();
-
-        while (match(TokenType.PLUS, TokenType.MINUS)) {
-            Token operator = peek(0);
-            e = new Expression.Binary(e, multiplication(), operator);
-        }
-        return e;
-    }
-
     private Expression unary() {
         if (match(TokenType.NOT, TokenType.MINUS)) {
             Token operator = peek(0);
-
             return new Expression.Unary(operator, unary());
         } else return primary();
     }
@@ -95,7 +166,7 @@ public class Parser {
                 throw error(peek(), "Unclosed '('");
             }
             return new Expression.Grouping(e);
-        }
+        } else if (match(TokenType.IDENTIFIER)) return new Expression.Variable(peek(0));
         throw error(peek(0), "No expression found");
     }
 
@@ -108,10 +179,9 @@ public class Parser {
                 case PRINT:
                 case RETURN:
                 case FOR:
-                case VAR:
+                case LET:
                 case FUNC:
                 case CLASS:
-
             }
         }
         next();
@@ -142,6 +212,10 @@ public class Parser {
     }
 
     private Token peek(int howMany) {
+        if (current + howMany - 1 >= tokens.size() || current + howMany - 1 < 0) {
+            Main.report(tokens.get(current - 1).line, "", "not enough tokens");
+            throw new ParserError();
+        }
         return tokens.get(current + howMany - 1);
     }
 

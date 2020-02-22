@@ -3,6 +3,7 @@ package pw.mintsoup.lmao;
 import pw.mintsoup.lmao.parser.AstPrinter;
 import pw.mintsoup.lmao.parser.Expression;
 import pw.mintsoup.lmao.parser.Parser;
+import pw.mintsoup.lmao.parser.Statement;
 import pw.mintsoup.lmao.scanner.Scanner;
 import pw.mintsoup.lmao.scanner.Token;
 import pw.mintsoup.lmao.scanner.TokenType;
@@ -41,7 +42,8 @@ public class Main {
 
         while (true) {
             System.out.print("> ");
-            run(b.readLine());
+            String line = b.readLine();
+            run(line);
             hadError = false;
         }
     }
@@ -53,12 +55,25 @@ public class Main {
     }
 
     private static void run(String s) {
-        AstPrinter a = new AstPrinter();
-        Scanner scanner = new Scanner(s);
-        List<Token> tokens = scanner.scanTokens();
-        Parser p = new Parser(tokens);
-        Interpreter i = new Interpreter();
-        System.out.println(p.parse().accept(i));
+        try {
+            Scanner scanner = new Scanner(s);
+            List<Token> tokens = scanner.scanTokens();
+            Parser p = new Parser(tokens);
+            Interpreter i = new Interpreter();
+            List<Statement> statements = p.parse();
+            if (statements != null) {
+                for (Statement statement : statements) {
+                    statement.accept(i);
+                }
+            }
+
+        } catch (Interpreter.InterpreterError e) {
+
+        } catch (Scanner.ScannerError e) {
+
+        }
+
+
     }
 
 
@@ -69,6 +84,8 @@ public class Main {
 
     public static void error(int line, String message) {
         report(line, "", message);
+        System.err.flush();
+
         hadError = true;
     }
 }
