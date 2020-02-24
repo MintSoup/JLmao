@@ -14,7 +14,6 @@ public class Parser {
 
     private final List<Token> tokens;
     private int current = 0;
-    private final AstPrinter printer = new AstPrinter();
     private final List<Statement> statements = new ArrayList<>();
 
     public Parser(List<Token> tokens) {
@@ -58,7 +57,7 @@ public class Parser {
         }
 
         if (!match(TokenType.SEMICOLON)) {
-            throw error(peek(0), "Expected semicolon after variable declaration");
+            throw error(peek(0), "Expected ';' after variable declaration");
         }
         return new Statement.Var(name, init);
     }
@@ -70,8 +69,20 @@ public class Parser {
                 throw error(peek(0), "Excepted ';' after print.");
             }
             return new Statement.Print(f);
+        } else if (match(TokenType.LEFT_BRACE)) {
+            return new Statement.Block(block());
         } else return expressionStatement();
 
+    }
+
+    private List<Statement> block() {
+        List<Statement> statements = new ArrayList<>();
+        while (!isAtEnd() && !match(TokenType.RIGHT_BRACE)) {
+            statements.add(declaration());
+        }
+
+        if (peek(0).type != TokenType.RIGHT_BRACE) throw error(peek(0), "Unmatched curly braces");
+        return statements;
     }
 
     private Statement expressionStatement() {
@@ -183,8 +194,8 @@ public class Parser {
                 case FUNC:
                 case CLASS:
             }
+            next();
         }
-        next();
         return;
     }
 

@@ -63,6 +63,7 @@ public class Main {
             List<Statement> statements = p.parse();
             if (statements != null) {
                 for (Statement statement : statements) {
+                    if(statement != null)
                     statement.accept(i);
                 }
             }
@@ -70,6 +71,8 @@ public class Main {
         } catch (Interpreter.InterpreterError e) {
 
         } catch (Scanner.ScannerError e) {
+
+        } catch(Environment.EnvironmentError e) {
 
         }
 

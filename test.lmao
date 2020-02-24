@@ -1,2 +1,11 @@
-let a = 3;
+let a = 1;
+let b = 2;
+{
+    let c = 3;
+    a = 3;
+    {
+        let g = 9.81;
+        print a + c * g;
+    }
+}
 print a;

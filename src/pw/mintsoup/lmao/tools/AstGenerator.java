@@ -18,7 +18,8 @@ public class AstGenerator {
                 "Assignment: Token variable, Expression value"));
         defineAST("pw.mintsoup.lmao.parser", "Statement", Arrays.asList("EStatement: Expression e",
                 "Print: Expression e",
-                "Var: Token name, Expression init"
+                "Var: Token name, Expression init",
+                "Block: List<Statement> statements"
         ));
     }
 

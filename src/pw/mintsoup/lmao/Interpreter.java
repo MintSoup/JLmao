@@ -31,8 +31,22 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         if (statement.init != null) {
             init = statement.init.accept(this);
         }
-        e.define(statement.name.lex, init);
+        e.define(statement.name, init);
         return null;
+    }
+
+    @Override
+    public Void visitBlockStatement(Statement.Block statement) {
+        executeBlock(statement, new Environment(e));
+        return null;
+    }
+
+    private void executeBlock(Statement.Block statement, Environment environment) {
+        e = environment;
+        for (Statement s : statement.statements) {
+            s.accept(this);
+        }
+        e = e.parent;
     }
 
 
@@ -166,13 +180,15 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
 
     @Override
     public Object visitVariableExpression(@NotNull Expression.Variable expression) {
-        return e.get(expression.name.lex);
+        return e.get(expression.name);
     }
 
     @Override
     public Object visitAssignmentExpression(@NotNull Expression.Assignment expression) {
         Object val = expression.value.accept(this);
-        e.assign(expression.variable.lex, val);
+        e.assign(expression.variable, val);
         return val;
     }
+
+
 }
