@@ -10,6 +10,8 @@ import java.util.List;
 
 public class Parser {
 
+    private boolean isInsideLoop = false;
+
     public class ParserError extends RuntimeException {
     }
 
@@ -78,6 +80,13 @@ public class Parser {
             return whileStatement();
         } else if (match(TokenType.FOR)) {
             return forStatement();
+        } else if (match(TokenType.BREAK)) {
+            if (!match(TokenType.SEMICOLON)) {
+                throw error(peek(0), "';' expected after break/continue.");
+            }
+            if (isInsideLoop)
+                return new Statement.Break(peek(-1));
+            else throw error(peek(-1), "Break outside loop");
         } else if (match(TokenType.LEFT_BRACE)) {
             return new Statement.Block(block());
         } else return expressionStatement();
@@ -85,6 +94,9 @@ public class Parser {
     }
 
     private Statement forStatement() {
+        boolean loop = isInsideLoop;
+        isInsideLoop = true;
+
         if (!match(TokenType.LEFT_PRNTH)) {
             Token t = peek(0);
             throw error(t, "Expected '(' after while statement.");
@@ -124,10 +136,14 @@ public class Parser {
         if (init != null)
             body = new Statement.Block(Arrays.asList(init, body));
 
+        isInsideLoop = loop;
         return body;
     }
 
     private Statement.While whileStatement() {
+        boolean loop = isInsideLoop;
+        isInsideLoop = true;
+
         if (!match(TokenType.LEFT_PRNTH)) {
             Token t = peek(0);
             throw error(t, "Expected '(' after while statement.");
@@ -138,6 +154,8 @@ public class Parser {
             throw error(t, "Expected ')' after while statement.");
         }
         Statement stmt = statement();
+
+        isInsideLoop = loop;
         return new Statement.While(condition, stmt);
     }
 
@@ -276,24 +294,25 @@ public class Parser {
 
     private void skipStatement() {
         next();
-        while (peek(0).type != TokenType.SEMICOLON) {
-            switch (peek().type) {
-                case IF:
-                case WHILE:
-                case PRINT:
-                case RETURN:
-                case FOR:
-                case LET:
-                case FUNC:
-                case CLASS:
+        if (!isAtEnd())
+            while (peek(0).type != TokenType.SEMICOLON) {
+                switch (peek().type) {
+                    case IF:
+                    case WHILE:
+                    case PRINT:
+                    case RETURN:
+                    case FOR:
+                    case LET:
+                    case FUNC:
+                    case CLASS:
+                }
+                next();
             }
-            next();
-        }
         return;
     }
 
     private ParserError error(Token token, String s) {
-        Main.report(token.line, "at '" + token.lex + "'", s);
+        Main.error(token.line, s);
         throw new ParserError();
     }
 
@@ -308,7 +327,7 @@ public class Parser {
     }
 
     private boolean isAtEnd() {
-        return peek().type == TokenType.EOF;
+        return current + 1 >= tokens.size();
     }
 
     private Token peek() {
@@ -316,11 +335,12 @@ public class Parser {
     }
 
     private Token peek(int howMany) {
-        if (current + howMany - 1 >= tokens.size() || current + howMany - 1 < 0) {
-            Main.report(tokens.get(current - 1).line, "at " + tokens.get(current - 1).type, "not enough tokens");
+        try {
+            return tokens.get(current + howMany - 1);
+        } catch (IndexOutOfBoundsException e) {
+            Main.report(tokens.get(current - 1).line, "", "not enough tokens");
             throw new ParserError();
         }
-        return tokens.get(current + howMany - 1);
     }
 
     private boolean match(TokenType... t) {

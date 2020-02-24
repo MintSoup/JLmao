@@ -38,6 +38,8 @@ public class Scanner {
         keywords.put("let", LET);
         keywords.put("while", WHILE);
         keywords.put("xor", XOR);
+        keywords.put("break", BREAK);
+
     }
 
     public Scanner(String source) {

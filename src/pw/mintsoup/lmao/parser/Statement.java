@@ -9,6 +9,7 @@ public abstract class Statement{
     R visitBlockStatement(Block statement);
     R visitIfStatement(If statement);
     R visitWhileStatement(While statement);
+    R visitBreakStatement(Break statement);
   }
 public abstract <A> A accept(Visitor<A> visitor);
 public static class EStatement extends Statement{
@@ -71,6 +72,15 @@ this.statement = statement;
 }
 public <A> A accept(Visitor<A> visitor){
  return visitor.visitWhileStatement(this);
+}
+}
+public static class Break extends Statement{
+public final Token type;
+public Break(Token type) {
+this.type = type;
+}
+public <A> A accept(Visitor<A> visitor){
+ return visitor.visitBreakStatement(this);
 }
 }
 }

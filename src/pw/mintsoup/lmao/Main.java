@@ -61,18 +61,19 @@ public class Main {
             Parser p = new Parser(tokens);
             Interpreter i = new Interpreter();
             List<Statement> statements = p.parse();
-            if (statements != null) {
-                for (Statement statement : statements) {
-                    if(statement != null)
-                    statement.accept(i);
+            if (!hadError)
+                if (statements != null) {
+                    for (Statement statement : statements) {
+                        if (statement != null)
+                            statement.accept(i);
+                    }
                 }
-            }
 
         } catch (Interpreter.InterpreterError e) {
 
         } catch (Scanner.ScannerError e) {
 
-        } catch(Environment.EnvironmentError e) {
+        } catch (Environment.EnvironmentError e) {
 
         }
 
@@ -82,7 +83,6 @@ public class Main {
 
     public static void report(int line, String where, String message) {
         System.err.printf("[ERROR] Line %d, %s: %s\n", line, where, message);
-
     }
 
     public static void error(int line, String message) {

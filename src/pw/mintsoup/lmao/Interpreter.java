@@ -12,6 +12,7 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
 
     Environment e = new Environment();
 
+    boolean breakFlag = false;
 
     @Override
     public Void visitEStatementStatement(@NotNull Statement.EStatement statement) {
@@ -57,7 +58,17 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     public Void visitWhileStatement(Statement.While statement) {
         while(isTrue(statement.condition.accept(this))){
             statement.statement.accept(this);
+            if(breakFlag) {
+                breakFlag = false;
+                break;
+            }
         }
+        return null;
+    }
+
+    @Override
+    public Void visitBreakStatement(Statement.Break statement) {
+        if(statement.type.type == TokenType.BREAK) breakFlag = true;
         return null;
     }
 

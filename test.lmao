@@ -1,4 +1,13 @@
 let i = 0;
-for(i = 3;;i = i + 1){
+while(i < 10){
+    i = i + 1;
+    if(i == 4){
+        print "";
+        for(let a = 0; a < 5; a = a + 1){
+            print a;
+            if(a > 1) break;
+        }
+        print "";
+    }
     print i;
 }

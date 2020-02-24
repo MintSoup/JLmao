@@ -22,7 +22,8 @@ public class AstGenerator {
                 "Var: Token name, Expression init",
                 "Block: List<Statement> statements",
                 "If: Expression condition, Statement statement, Statement elseStatement",
-                "While: Expression condition, Statement statement"
+                "While: Expression condition, Statement statement",
+                "Break: Token type"
         ));
     }
 
