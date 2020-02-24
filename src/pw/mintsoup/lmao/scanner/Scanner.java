@@ -37,6 +37,7 @@ public class Scanner {
         keywords.put("true", TRUE);
         keywords.put("let", LET);
         keywords.put("while", WHILE);
+        keywords.put("xor", XOR);
     }
 
     public Scanner(String source) {

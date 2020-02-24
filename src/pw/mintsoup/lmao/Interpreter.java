@@ -41,6 +41,26 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         return null;
     }
 
+    @Override
+    public Void visitIfStatement(Statement.If statement) {
+        if (isTrue(statement.condition.accept(this))) {
+            statement.statement.accept(this);
+        } else {
+            if (statement.elseStatement != null) {
+                statement.elseStatement.accept(this);
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitWhileStatement(Statement.While statement) {
+        while(isTrue(statement.condition.accept(this))){
+            statement.statement.accept(this);
+        }
+        return null;
+    }
+
     private void executeBlock(Statement.Block statement, Environment environment) {
         e = environment;
         for (Statement s : statement.statements) {
@@ -159,13 +179,7 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         Object value = expression.a.accept(this);
 
         if (expression.operand.type == TokenType.NOT) {
-            if (value instanceof Boolean) {
-                return !(boolean) value;
-            } else if (value == null) {
-                return false;
-            } else {
-                return true;
-            }
+            return !isTrue(value);
         } else if (expression.operand.type == TokenType.MINUS) {
             if (value instanceof Double) {
                 return -(double) value;
@@ -188,6 +202,33 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         Object val = expression.value.accept(this);
         e.assign(expression.variable, val);
         return val;
+    }
+
+    @Override
+    public Object visitLogicalExpression(Expression.Logical expression) {
+        Object left = expression.left.accept(this);
+        Object right = expression.right.accept(this);
+
+        switch (expression.operand.type) {
+            case AND: {
+                return isTrue(left) && isTrue(right);
+            }
+            case OR: {
+                return isTrue(left) || isTrue(right);
+            }
+            case XOR: {
+                return isTrue(left) != isTrue(right);
+            }
+            default: {
+                throw error(expression.operand.line, "ur mom", "for some cringe ass reason i got a " + expression.operand.type + " for a logical expression");
+            }
+        }
+    }
+
+    public boolean isTrue(Object b) {
+        if (b == null) return false;
+        if (b instanceof Boolean) return (boolean) b;
+        return true;
     }
 
 

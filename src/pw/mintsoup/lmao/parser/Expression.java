@@ -9,6 +9,7 @@ public abstract class Expression{
     R visitUnaryExpression(Unary expression);
     R visitVariableExpression(Variable expression);
     R visitAssignmentExpression(Assignment expression);
+    R visitLogicalExpression(Logical expression);
   }
 public abstract <A> A accept(Visitor<A> visitor);
 public static class Binary extends Expression{
@@ -71,6 +72,19 @@ this.value = value;
 }
 public <A> A accept(Visitor<A> visitor){
  return visitor.visitAssignmentExpression(this);
+}
+}
+public static class Logical extends Expression{
+public final Expression left;
+public final Expression right;
+public final Token operand;
+public Logical(Expression left, Expression right, Token operand) {
+this.left = left;
+this.right = right;
+this.operand = operand;
+}
+public <A> A accept(Visitor<A> visitor){
+ return visitor.visitLogicalExpression(this);
 }
 }
 }

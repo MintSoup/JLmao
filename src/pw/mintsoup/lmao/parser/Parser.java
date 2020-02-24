@@ -5,6 +5,7 @@ import pw.mintsoup.lmao.scanner.Token;
 import pw.mintsoup.lmao.scanner.TokenType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Parser {
@@ -27,6 +28,7 @@ public class Parser {
             while (!isAtEnd()) statements.add(declaration());
             return statements;
         } catch (ParserError e) {
+            skipStatement();
             return null;
         }
     }
@@ -69,10 +71,91 @@ public class Parser {
                 throw error(peek(0), "Excepted ';' after print.");
             }
             return new Statement.Print(f);
+
+        } else if (match(TokenType.IF)) {
+            return ifStatement();
+        } else if (match(TokenType.WHILE)) {
+            return whileStatement();
+        } else if (match(TokenType.FOR)) {
+            return forStatement();
         } else if (match(TokenType.LEFT_BRACE)) {
             return new Statement.Block(block());
         } else return expressionStatement();
 
+    }
+
+    private Statement forStatement() {
+        if (!match(TokenType.LEFT_PRNTH)) {
+            Token t = peek(0);
+            throw error(t, "Expected '(' after while statement.");
+        }
+        Statement init;
+        if (match(TokenType.SEMICOLON)) init = null;
+        else if (match(TokenType.LET)) init = varDeclaration();
+        else init = expressionStatement();
+
+
+        Expression condition;
+        if (match(TokenType.SEMICOLON)) condition = null;
+        else {
+            condition = expression();
+            if (!match(TokenType.SEMICOLON)) {
+                throw error(peek(0), "Expected ';' after condition of a for loop");
+            }
+        }
+
+        Expression increment;
+        if (match(TokenType.RIGHT_PRNTH)) increment = null;
+        else {
+            increment = expression();
+            if (!match(TokenType.RIGHT_PRNTH)) {
+                throw error(peek(0), "Expected ')' for loop");
+            }
+        }
+
+        Statement body = statement();
+
+        if (increment != null) {
+            body = new Statement.Block(Arrays.asList(body, new Statement.EStatement(increment)));
+        }
+        if (condition == null) condition = new Expression.Literal(true);
+        body = new Statement.While(condition, body);
+
+        if (init != null)
+            body = new Statement.Block(Arrays.asList(init, body));
+
+        return body;
+    }
+
+    private Statement.While whileStatement() {
+        if (!match(TokenType.LEFT_PRNTH)) {
+            Token t = peek(0);
+            throw error(t, "Expected '(' after while statement.");
+        }
+        Expression condition = expression();
+        if (!match(TokenType.RIGHT_PRNTH)) {
+            Token t = peek(0);
+            throw error(t, "Expected ')' after while statement.");
+        }
+        Statement stmt = statement();
+        return new Statement.While(condition, stmt);
+    }
+
+    private Statement.If ifStatement() {
+        if (!match(TokenType.LEFT_PRNTH)) {
+            Token t = peek(0);
+            throw error(t, "Expected '(' after if statement.");
+        }
+        Expression condition = expression();
+        if (!match(TokenType.RIGHT_PRNTH)) {
+            Token t = peek(0);
+            throw error(t, "Expected ')' after if statement.");
+        }
+        Statement stmt = null;
+        Statement els = null;
+        stmt = statement();
+        if (match(TokenType.ELSE)) els = statement();
+        return new Statement.If(condition, stmt, els);
     }
 
     private List<Statement> block() {
@@ -98,7 +181,7 @@ public class Parser {
     }
 
     private Expression assignment() {
-        Expression e = equality();
+        Expression e = logical();
 
         if (match(TokenType.EQUAL)) {
             Token equals = peek(0);
@@ -113,6 +196,16 @@ public class Parser {
         }
 
 
+        return e;
+    }
+
+    private Expression logical() {
+        Expression e = equality();
+
+        while (match(TokenType.AND, TokenType.OR, TokenType.XOR)) {
+            Token operator = peek(0);
+            e = new Expression.Logical(e, equality(), operator);
+        }
         return e;
     }
 
@@ -224,7 +317,7 @@ public class Parser {
 
     private Token peek(int howMany) {
         if (current + howMany - 1 >= tokens.size() || current + howMany - 1 < 0) {
-            Main.report(tokens.get(current - 1).line, "", "not enough tokens");
+            Main.report(tokens.get(current - 1).line, "at " + tokens.get(current - 1).type, "not enough tokens");
             throw new ParserError();
         }
         return tokens.get(current + howMany - 1);

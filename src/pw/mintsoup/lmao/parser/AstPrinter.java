@@ -51,5 +51,10 @@ public class AstPrinter implements Expression.Visitor {
         return null;
     }
 
+    @Override
+    public Object visitLogicalExpression(Expression.Logical expression) {
+        return null;
+    }
+
 
 }

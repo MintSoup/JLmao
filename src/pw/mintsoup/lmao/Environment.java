@@ -42,7 +42,7 @@ public class Environment {
 
     public void assign(Token name, Object val) {
         if (vars.containsKey(name.lex)) vars.put(name.lex, val);
-        else if (parent != null && parent.vars.containsKey(name.lex)) parent.vars.put(name.lex, val);
+        else if (parent != null) parent.assign(name, val);
         else throw error(name.line, "at '" + name.lex + "'", "Undefined variable: " + name.lex);
     }
 }
