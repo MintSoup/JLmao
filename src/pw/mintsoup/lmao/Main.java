@@ -20,6 +20,7 @@ import java.util.List;
 public class Main {
 
     public static boolean hadError;
+    private static final Interpreter i = new Interpreter();
 
     public static void main(String[] args) throws IOException {
 
@@ -59,7 +60,6 @@ public class Main {
             Scanner scanner = new Scanner(s);
             List<Token> tokens = scanner.scanTokens();
             Parser p = new Parser(tokens);
-            Interpreter i = new Interpreter();
             List<Statement> statements = p.parse();
             if (!hadError)
                 if (statements != null) {
