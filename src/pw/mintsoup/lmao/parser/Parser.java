@@ -81,12 +81,12 @@ public class Parser {
         } else if (match(TokenType.FOR)) {
             return forStatement();
         } else if (match(TokenType.BREAK)) {
-            if (!match(TokenType.SEMICOLON)) {
-                throw error(peek(0), "';' expected after break/continue.");
-            }
-            if (isInsideLoop)
+            if (isInsideLoop) {
+                if (!match(TokenType.SEMICOLON)) {
+                    throw error(peek(0), "';' expected after break/continue.");
+                }
                 return new Statement.Break(peek(-1));
-            else throw error(peek(-1), "Break outside loop");
+            } else throw error(peek(-1), "Break outside loop");
         } else if (match(TokenType.LEFT_BRACE)) {
             return new Statement.Block(block());
         } else return expressionStatement();
@@ -238,13 +238,23 @@ public class Parser {
     }
 
     private Expression comparison() {
-        Expression e = addition();
+        Expression e = modulo();
 
         while (match(TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL)) {
             Token operator = peek(0);
             e = new Expression.Binary(e, addition(), operator);
         }
 
+        return e;
+    }
+
+    private Expression modulo(){
+        Expression e = addition();
+
+        while(match(TokenType.MODULO)){
+            Token operator = peek(0);
+            e = new Expression.Binary(e, addition(), operator);
+        }
         return e;
     }
 

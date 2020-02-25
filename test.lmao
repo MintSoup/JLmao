@@ -1,13 +1,11 @@
-let i = 0;
-while(i < 10){
-    i = i + 1;
-    if(i == 4){
-        print "";
-        for(let a = 0; a < 5; a = a + 1){
-            print a;
-            if(a > 1) break;
-        }
-        print "";
+print 2;
+for(let i = 3; i < 15; i = i + 2){
+    let prime = true;
+    for(let a = 2; a <= i/2; a = a+1){
+       if(i % a == 0){
+            prime = false;
+            break;
+       }
     }
-    print i;
+    if(prime) print i;
 }

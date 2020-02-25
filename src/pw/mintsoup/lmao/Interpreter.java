@@ -56,9 +56,9 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
 
     @Override
     public Void visitWhileStatement(Statement.While statement) {
-        while(isTrue(statement.condition.accept(this))){
+        while (isTrue(statement.condition.accept(this))) {
             statement.statement.accept(this);
-            if(breakFlag) {
+            if (breakFlag) {
                 breakFlag = false;
                 break;
             }
@@ -68,7 +68,7 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
 
     @Override
     public Void visitBreakStatement(Statement.Break statement) {
-        if(statement.type.type == TokenType.BREAK) breakFlag = true;
+        if (statement.type.type == TokenType.BREAK) breakFlag = true;
         return null;
     }
 
@@ -167,12 +167,31 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
                     return false;
                 else return !left.equals(right);
             }
+            case MODULO: {
+                if (left instanceof Double && right instanceof Double) {
+                    double l = (double) left;
+                    double r = (double) right;
+                    if (isInt(l) && isInt(r)) {
+                        return (double)(Math.round(l) % Math.round(r));
+                    } else {
+                        throw error(expression.operand.line, "at %", "Cannot modulo two doubles.");
+                    }
+
+                } else {
+                    throw error(expression.operand.line, "at %", "Using modulo on unsupported operands.");
+                }
+            }
 
             default: {
                 throw error(expression.operand.line, "", "lmao parser broken");
             }
         }
 
+    }
+
+    private boolean isInt(double d) {
+        double difference = Math.abs(Math.round(d) - d);
+        return difference < 0.000001;
     }
 
     @Override

@@ -141,6 +141,11 @@ public class Scanner {
                 break;
             }
 
+            case '%': {
+                addToken(MODULO);
+                break;
+            }
+
             case ' ':
             case '\r':
             case '\t':
