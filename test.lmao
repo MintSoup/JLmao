@@ -1,11 +1,18 @@
-print 2;
-for(let i = 3; i < 15; i = i + 2){
-    let prime = true;
-    for(let a = 2; a <= i/2; a = a+1){
-       if(i % a == 0){
-            prime = false;
-            break;
-       }
+let primes = 0;
+func isPrime(a){
+    for(let i = 2; i <= sqrt(a); i = i + 1){
+        if(a % i == 0) return false;
     }
-    if(prime) print i;
+    return true;
 }
+let primes = 0;
+let t = clock();
+for(let i = 2; primes < 100000; i = i + 1){
+    if(isPrime(i)){
+        primes = primes + 1;
+        print(istr(i));
+    }
+}
+
+print(istr(clock() - t) + "ms taken to complete");
+

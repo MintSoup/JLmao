@@ -10,6 +10,8 @@ public abstract class Statement{
     R visitIfStatement(If statement);
     R visitWhileStatement(While statement);
     R visitBreakStatement(Break statement);
+    R visitFunctionStatement(Function statement);
+    R visitReturnStatement(Return statement);
   }
 public abstract <A> A accept(Visitor<A> visitor);
 public static class EStatement extends Statement{
@@ -81,6 +83,28 @@ this.type = type;
 }
 public <A> A accept(Visitor<A> visitor){
  return visitor.visitBreakStatement(this);
+}
+}
+public static class Function extends Statement{
+public final Token name;
+public final List<Token> arguments;
+public final List<Statement> statements;
+public Function(Token name, List<Token> arguments, List<Statement> statements) {
+this.name = name;
+this.arguments = arguments;
+this.statements = statements;
+}
+public <A> A accept(Visitor<A> visitor){
+ return visitor.visitFunctionStatement(this);
+}
+}
+public static class Return extends Statement{
+public final Expression value;
+public Return(Expression value) {
+this.value = value;
+}
+public <A> A accept(Visitor<A> visitor){
+ return visitor.visitReturnStatement(this);
 }
 }
 }

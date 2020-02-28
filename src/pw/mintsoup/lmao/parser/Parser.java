@@ -40,6 +40,8 @@ public class Parser {
             if (match(TokenType.LET)) {
                 return varDeclaration();
 
+            } else if (match(TokenType.FUNC)) {
+                return functionDeclaration("function");
             } else {
                 return statement();
 
@@ -48,6 +50,28 @@ public class Parser {
             skipStatement();
             return null;
         }
+    }
+
+    private Statement functionDeclaration(String type) {
+        Token name = consume(TokenType.IDENTIFIER, "Expected identifier for " + type + "declaration");
+        consume(TokenType.LEFT_PRNTH, "Expected '(' after" + type + " declaration");
+        List<Token> params = new ArrayList<Token>();
+        if (!match(TokenType.RIGHT_PRNTH)) {
+            while (true) {
+                params.add(next());
+                if (match(TokenType.RIGHT_PRNTH)) break;
+                else consume(TokenType.COMMA, "Expected ',' after " + type + " parameter");
+            }
+        }
+        consume(TokenType.LEFT_BRACE, "Expected '{' after " + type + " declaration");
+        List<Statement> body = block();
+
+        return new Statement.Function(name, params, body);
+    }
+
+    private Token consume(TokenType t, String message) {
+        if (peek().type == t) return next();
+        else throw error(peek(0), message);
     }
 
     private Statement varDeclaration() {
@@ -60,18 +84,16 @@ public class Parser {
             init = expression();
         }
 
-        if (!match(TokenType.SEMICOLON)) {
-            throw error(peek(0), "Expected ';' after variable declaration");
-        }
+        consume(TokenType.SEMICOLON, "Expected ';' after variable declaration");
+
         return new Statement.Var(name, init);
     }
 
     private Statement statement() {
         if (match(TokenType.PRINT)) {
             Expression f = expression();
-            if (!match(TokenType.SEMICOLON)) {
-                throw error(peek(0), "Excepted ';' after print.");
-            }
+            consume(TokenType.SEMICOLON, "Excepted ';' after print.");
+
             return new Statement.Print(f);
 
         } else if (match(TokenType.IF)) {
@@ -80,11 +102,11 @@ public class Parser {
             return whileStatement();
         } else if (match(TokenType.FOR)) {
             return forStatement();
+        } else if (match(TokenType.RETURN)) {
+            return returnStatement();
         } else if (match(TokenType.BREAK)) {
             if (isInsideLoop) {
-                if (!match(TokenType.SEMICOLON)) {
-                    throw error(peek(0), "';' expected after break/continue.");
-                }
+                consume(TokenType.SEMICOLON, "';' expected after break/continue.");
                 return new Statement.Break(peek(-1));
             } else throw error(peek(-1), "Break outside loop");
         } else if (match(TokenType.LEFT_BRACE)) {
@@ -93,14 +115,23 @@ public class Parser {
 
     }
 
+    private Statement returnStatement() {
+        Expression e;
+        if (match(TokenType.SEMICOLON))
+            e = null;
+        else
+            e = expression();
+
+        consume(TokenType.SEMICOLON, "Expected ';' after return statement");
+        return new Statement.Return(e);
+    }
+
     private Statement forStatement() {
         boolean loop = isInsideLoop;
         isInsideLoop = true;
 
-        if (!match(TokenType.LEFT_PRNTH)) {
-            Token t = peek(0);
-            throw error(t, "Expected '(' after while statement.");
-        }
+        consume(TokenType.LEFT_PRNTH, "Expected '(' after while statement.");
+
         Statement init;
         if (match(TokenType.SEMICOLON)) init = null;
         else if (match(TokenType.LET)) init = varDeclaration();
@@ -111,18 +142,16 @@ public class Parser {
         if (match(TokenType.SEMICOLON)) condition = null;
         else {
             condition = expression();
-            if (!match(TokenType.SEMICOLON)) {
-                throw error(peek(0), "Expected ';' after condition of a for loop");
-            }
+            consume(TokenType.SEMICOLON, "Expected ';' after condition of a for loop");
+
         }
 
         Expression increment;
         if (match(TokenType.RIGHT_PRNTH)) increment = null;
         else {
             increment = expression();
-            if (!match(TokenType.RIGHT_PRNTH)) {
-                throw error(peek(0), "Expected ')' for loop");
-            }
+            consume(TokenType.RIGHT_PRNTH, "Expected ')' for loop");
+
         }
 
         Statement body = statement();
@@ -144,15 +173,9 @@ public class Parser {
         boolean loop = isInsideLoop;
         isInsideLoop = true;
 
-        if (!match(TokenType.LEFT_PRNTH)) {
-            Token t = peek(0);
-            throw error(t, "Expected '(' after while statement.");
-        }
+        consume(TokenType.LEFT_PRNTH, "Expected '(' after while statement.");
         Expression condition = expression();
-        if (!match(TokenType.RIGHT_PRNTH)) {
-            Token t = peek(0);
-            throw error(t, "Expected ')' after while statement.");
-        }
+        consume(TokenType.RIGHT_PRNTH, "Expected ')' after while statement.");
         Statement stmt = statement();
 
         isInsideLoop = loop;
@@ -160,15 +183,11 @@ public class Parser {
     }
 
     private Statement.If ifStatement() {
-        if (!match(TokenType.LEFT_PRNTH)) {
-            Token t = peek(0);
-            throw error(t, "Expected '(' after if statement.");
-        }
+        consume(TokenType.LEFT_PRNTH, "Expected '(' after if statement.");
+
         Expression condition = expression();
-        if (!match(TokenType.RIGHT_PRNTH)) {
-            Token t = peek(0);
-            throw error(t, "Expected ')' after if statement.");
-        }
+        consume(TokenType.RIGHT_PRNTH, "Expected ')' after if statement.");
+
         Statement stmt = null;
         Statement els = null;
         stmt = statement();
@@ -188,9 +207,8 @@ public class Parser {
 
     private Statement expressionStatement() {
         Expression e = expression();
-        if (!match(TokenType.SEMICOLON)) {
-            throw error(peek(0), "Expected ';' after expression");
-        }
+        consume(TokenType.SEMICOLON, "Expected ';' after expression.");
+
         return new Statement.EStatement(e);
     }
 
@@ -248,10 +266,10 @@ public class Parser {
         return e;
     }
 
-    private Expression modulo(){
+    private Expression modulo() {
         Expression e = addition();
 
-        while(match(TokenType.MODULO)){
+        while (match(TokenType.MODULO)) {
             Token operator = peek(0);
             e = new Expression.Binary(e, addition(), operator);
         }
@@ -271,7 +289,6 @@ public class Parser {
     private Expression multiplication() {
         Expression e = unary();
 
-
         while (match(TokenType.STAR, TokenType.SLASH)) {
             Token operator = peek(0);
             e = new Expression.Binary(e, unary(), operator);
@@ -283,7 +300,33 @@ public class Parser {
         if (match(TokenType.NOT, TokenType.MINUS)) {
             Token operator = peek(0);
             return new Expression.Unary(operator, unary());
-        } else return primary();
+        } else return call();
+
+    }
+
+    private Expression call() {
+        Expression e = primary();
+        while (true) {
+            if (match(TokenType.LEFT_PRNTH)) e = finishCall(e);
+            else break;
+        }
+
+        return e;
+    }
+
+    private Expression finishCall(Expression e) {
+        List<Expression> args = new ArrayList<>();
+        if (!match(TokenType.RIGHT_PRNTH)) {
+            do {
+                args.add(expression());
+            } while (match(TokenType.COMMA));
+            if (next().type != TokenType.RIGHT_PRNTH) error(peek(0), "Expected ')' after function arguments.");
+        }
+
+        if (args.size() > 255)
+            throw error(peek(0), "Function takes " + args.size() + " arguments, max 255 supported");
+
+        return new Expression.Call(e, peek(0), args);
     }
 
     private Expression primary() {
@@ -294,9 +337,7 @@ public class Parser {
         else if (match(TokenType.NUL)) return new Expression.Literal(null);
         else if (match(TokenType.LEFT_PRNTH)) {
             Expression e = expression();
-            if (!match(TokenType.RIGHT_PRNTH)) {
-                throw error(peek(), "Unclosed '('");
-            }
+            consume(TokenType.RIGHT_PRNTH, "Expected '(' after if statement.");
             return new Expression.Grouping(e);
         } else if (match(TokenType.IDENTIFIER)) return new Expression.Variable(peek(0));
         throw error(peek(0), "No expression found");
@@ -315,6 +356,7 @@ public class Parser {
                     case LET:
                     case FUNC:
                     case CLASS:
+
                 }
                 next();
             }
@@ -348,7 +390,11 @@ public class Parser {
         try {
             return tokens.get(current + howMany - 1);
         } catch (IndexOutOfBoundsException e) {
-            Main.report(tokens.get(current - 1).line, "", "not enough tokens");
+            try {
+                Main.report(tokens.get(current - 1).line, "", "not enough tokens");
+            } catch (IndexOutOfBoundsException f) {
+                Main.report(tokens.get(current - 2).line, "", "not enough tokens");
+            }
             throw new ParserError();
         }
     }

@@ -1,12 +1,9 @@
 package pw.mintsoup.lmao;
 
-import pw.mintsoup.lmao.parser.AstPrinter;
-import pw.mintsoup.lmao.parser.Expression;
 import pw.mintsoup.lmao.parser.Parser;
 import pw.mintsoup.lmao.parser.Statement;
 import pw.mintsoup.lmao.scanner.Scanner;
 import pw.mintsoup.lmao.scanner.Token;
-import pw.mintsoup.lmao.scanner.TokenType;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -74,6 +71,8 @@ public class Main {
         } catch (Scanner.ScannerError e) {
 
         } catch (Environment.EnvironmentError e) {
+
+        } catch (Parser.ParserError e){
 
         }
 

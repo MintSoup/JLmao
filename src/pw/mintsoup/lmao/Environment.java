@@ -27,8 +27,8 @@ public class Environment {
         return new EnvironmentError();
     }
 
-    public void define(Token name, Object value) {
-        vars.put(name.lex, value);
+    public void define(String name, Object value) {
+        vars.put(name, value);
     }
 
     public Object get(@NotNull Token name) {

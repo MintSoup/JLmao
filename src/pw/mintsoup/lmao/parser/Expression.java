@@ -10,6 +10,7 @@ public abstract class Expression{
     R visitVariableExpression(Variable expression);
     R visitAssignmentExpression(Assignment expression);
     R visitLogicalExpression(Logical expression);
+    R visitCallExpression(Call expression);
   }
 public abstract <A> A accept(Visitor<A> visitor);
 public static class Binary extends Expression{
@@ -85,6 +86,19 @@ this.operand = operand;
 }
 public <A> A accept(Visitor<A> visitor){
  return visitor.visitLogicalExpression(this);
+}
+}
+public static class Call extends Expression{
+public final Expression callee;
+public final Token p;
+public final List<Expression> arguments;
+public Call(Expression callee, Token p, List<Expression> arguments) {
+this.callee = callee;
+this.p = p;
+this.arguments = arguments;
+}
+public <A> A accept(Visitor<A> visitor){
+ return visitor.visitCallExpression(this);
 }
 }
 }

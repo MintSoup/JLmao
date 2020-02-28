@@ -16,14 +16,17 @@ public class AstGenerator {
                 "Unary: Token operand, Expression a",
                 "Variable: Token name",
                 "Assignment: Token variable, Expression value",
-                "Logical: Expression left, Expression right, Token operand"));
+                "Logical: Expression left, Expression right, Token operand",
+                "Call: Expression callee, Token p, List<Expression> arguments"));
         defineAST("pw.mintsoup.lmao.parser", "Statement", Arrays.asList("EStatement: Expression e",
                 "Print: Expression e",
                 "Var: Token name, Expression init",
                 "Block: List<Statement> statements",
                 "If: Expression condition, Statement statement, Statement elseStatement",
                 "While: Expression condition, Statement statement",
-                "Break: Token type"
+                "Break: Token type",
+                "Function: Token name, List<Token> arguments, List<Statement> statements",
+                "Return: Expression value"
         ));
     }
 
