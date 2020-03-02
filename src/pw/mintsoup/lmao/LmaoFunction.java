@@ -6,14 +6,17 @@ import java.util.List;
 
 public class LmaoFunction implements LmaoCallable {
     Statement.Function declaration;
+    Environment parent;
 
-    public LmaoFunction(Statement.Function declaration) {
+    public LmaoFunction(Statement.Function declaration, Environment parent) {
         this.declaration = declaration;
+        this.parent = parent;
     }
+
 
     @Override
     public Object call(Interpreter interpreter, List<Object> args) {
-        Environment e = new Environment(interpreter.globals);
+        Environment e = new Environment(parent);
         for (int i = 0; i < declaration.arguments.size(); i++) {
             e.define(declaration.arguments.get(i).lex, args.get(i));
         }

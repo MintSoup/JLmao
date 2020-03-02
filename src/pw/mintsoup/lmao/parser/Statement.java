@@ -100,8 +100,10 @@ public <A> A accept(Visitor<A> visitor){
 }
 public static class Return extends Statement{
 public final Expression value;
-public Return(Expression value) {
+public final Token keyword;
+public Return(Expression value, Token keyword) {
 this.value = value;
+this.keyword = keyword;
 }
 public <A> A accept(Visitor<A> visitor){
  return visitor.visitReturnStatement(this);

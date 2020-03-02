@@ -10,8 +10,6 @@ import java.util.List;
 
 public class Parser {
 
-    private boolean isInsideLoop = false;
-
     public class ParserError extends RuntimeException {
     }
 
@@ -103,19 +101,17 @@ public class Parser {
         } else if (match(TokenType.FOR)) {
             return forStatement();
         } else if (match(TokenType.RETURN)) {
-            return returnStatement();
+            return returnStatement(peek(0));
         } else if (match(TokenType.BREAK)) {
-            if (isInsideLoop) {
-                consume(TokenType.SEMICOLON, "';' expected after break/continue.");
-                return new Statement.Break(peek(-1));
-            } else throw error(peek(-1), "Break outside loop");
+            consume(TokenType.SEMICOLON, "';' expected after break/continue.");
+            return new Statement.Break(peek(-1));
         } else if (match(TokenType.LEFT_BRACE)) {
             return new Statement.Block(block());
         } else return expressionStatement();
 
     }
 
-    private Statement returnStatement() {
+    private Statement returnStatement(Token tok) {
         Expression e;
         if (match(TokenType.SEMICOLON))
             e = null;
@@ -123,13 +119,10 @@ public class Parser {
             e = expression();
 
         consume(TokenType.SEMICOLON, "Expected ';' after return statement");
-        return new Statement.Return(e);
+        return new Statement.Return(e, tok);
     }
 
     private Statement forStatement() {
-        boolean loop = isInsideLoop;
-        isInsideLoop = true;
-
         consume(TokenType.LEFT_PRNTH, "Expected '(' after while statement.");
 
         Statement init;
@@ -165,20 +158,16 @@ public class Parser {
         if (init != null)
             body = new Statement.Block(Arrays.asList(init, body));
 
-        isInsideLoop = loop;
+
         return body;
     }
 
     private Statement.While whileStatement() {
-        boolean loop = isInsideLoop;
-        isInsideLoop = true;
 
         consume(TokenType.LEFT_PRNTH, "Expected '(' after while statement.");
         Expression condition = expression();
         consume(TokenType.RIGHT_PRNTH, "Expected ')' after while statement.");
         Statement stmt = statement();
-
-        isInsideLoop = loop;
         return new Statement.While(condition, stmt);
     }
 
@@ -225,9 +214,12 @@ public class Parser {
 
             if (e instanceof Expression.Variable) {
                 Token name = ((Expression.Variable) e).name;
-                return new Expression.Assignment(name, value);
+                return new Expression.Assignment(name, value, null);
             }
-
+            else if (e instanceof Expression.Map){
+                Token name = ((Expression.Map) e).nameToken;
+                return new Expression.Assignment(name, value, ((Expression.Map) e).index);
+            }
             error(equals, "Invalid assignment target.");
         }
 
@@ -308,10 +300,18 @@ public class Parser {
         Expression e = primary();
         while (true) {
             if (match(TokenType.LEFT_PRNTH)) e = finishCall(e);
+            if (match(TokenType.LEFT_SBRACKET)) e = finishMap(e, peek(-1));
+
             else break;
         }
 
         return e;
+    }
+
+    private Expression finishMap(Expression e, Token nameToken) {
+        Expression index = expression();
+        consume(TokenType.RIGHT_SBRACKET, "Expected ']' after index expression.");
+        return new Expression.Map(e, index, nameToken);
     }
 
     private Expression finishCall(Expression e) {

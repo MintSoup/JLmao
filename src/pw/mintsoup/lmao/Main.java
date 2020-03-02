@@ -60,9 +60,14 @@ public class Main {
             List<Statement> statements = p.parse();
             if (!hadError)
                 if (statements != null) {
-                    for (Statement statement : statements) {
-                        if (statement != null)
-                            statement.accept(i);
+
+                    Resolver resolver = new Resolver(i);
+                    resolver.resolve(statements);
+                    if (!hadError) {
+                        for (Statement statement : statements) {
+                            if (statement != null)
+                                statement.accept(i);
+                        }
                     }
                 }
 
@@ -72,7 +77,7 @@ public class Main {
 
         } catch (Environment.EnvironmentError e) {
 
-        } catch (Parser.ParserError e){
+        } catch (Parser.ParserError e) {
 
         }
 

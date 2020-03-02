@@ -11,6 +11,7 @@ public abstract class Expression{
     R visitAssignmentExpression(Assignment expression);
     R visitLogicalExpression(Logical expression);
     R visitCallExpression(Call expression);
+    R visitMapExpression(Map expression);
   }
 public abstract <A> A accept(Visitor<A> visitor);
 public static class Binary extends Expression{
@@ -67,9 +68,11 @@ public <A> A accept(Visitor<A> visitor){
 public static class Assignment extends Expression{
 public final Token variable;
 public final Expression value;
-public Assignment(Token variable, Expression value) {
+public final Expression index;
+public Assignment(Token variable, Expression value, Expression index) {
 this.variable = variable;
 this.value = value;
+this.index = index;
 }
 public <A> A accept(Visitor<A> visitor){
  return visitor.visitAssignmentExpression(this);
@@ -99,6 +102,19 @@ this.arguments = arguments;
 }
 public <A> A accept(Visitor<A> visitor){
  return visitor.visitCallExpression(this);
+}
+}
+public static class Map extends Expression{
+public final Expression var;
+public final Expression index;
+public final Token nameToken;
+public Map(Expression var, Expression index, Token nameToken) {
+this.var = var;
+this.index = index;
+this.nameToken = nameToken;
+}
+public <A> A accept(Visitor<A> visitor){
+ return visitor.visitMapExpression(this);
 }
 }
 }

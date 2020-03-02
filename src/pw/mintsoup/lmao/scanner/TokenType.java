@@ -2,7 +2,7 @@ package pw.mintsoup.lmao.scanner;
 
 public enum TokenType {
     //Single-Character
-    RIGHT_PRNTH, LEFT_PRNTH, PLUS, MINUS, SLASH, STAR, LEFT_BRACE, RIGHT_BRACE, COMMA, DOT, SEMICOLON,
+    RIGHT_PRNTH, LEFT_PRNTH, PLUS, MINUS, SLASH, STAR, LEFT_BRACE, RIGHT_BRACE, COMMA, DOT, SEMICOLON, LEFT_SBRACKET, RIGHT_SBRACKET,
 
     //Single/Double
     NOT, NOT_EQUAL,

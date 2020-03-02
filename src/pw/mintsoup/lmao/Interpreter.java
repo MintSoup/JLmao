@@ -3,15 +3,19 @@ package pw.mintsoup.lmao;
 import org.jetbrains.annotations.NotNull;
 import pw.mintsoup.lmao.parser.Expression;
 import pw.mintsoup.lmao.parser.Statement;
+import pw.mintsoup.lmao.scanner.Token;
 import pw.mintsoup.lmao.scanner.TokenType;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Interpreter implements Expression.Visitor<Object>, Statement.Visitor<Void> {
+
 
     class InterpreterError extends RuntimeException {
     }
@@ -19,9 +23,14 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     public final Environment globals = new Environment();
     Environment e = globals;
 
-    boolean breakFlag = false;
+    private final Map<Expression, Integer> locals = new HashMap<>();
 
     final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+
+    public void resolve(Expression expression, int i) {
+        locals.put(expression, i);
+    }
+
 
     @Override
     public Void visitEStatementStatement(@NotNull Statement.EStatement statement) {
@@ -111,10 +120,68 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
             @Override
             public Object call(Interpreter interpreter, List<Object> args) {
                 if (args.get(0) == null) return "null";
-                if (args.get(0) instanceof Double){
-                    return Math.sqrt((double)args.get(0));
-                }
+                if (args.get(0) instanceof Double) {
+                    return Math.sqrt((double) args.get(0));
+                } else return null;
+            }
+
+            @Override
+            public int argSize() {
+                return 1;
+            }
+        });
+        globals.define("map", new LmaoCallable() {
+            @Override
+            public Object call(Interpreter interpreter, List<Object> args) {
+                return new HashMap<>();
+            }
+
+            @Override
+            public int argSize() {
+                return 0;
+            }
+        });
+        globals.define("size", new LmaoCallable() {
+            @Override
+            public Object call(Interpreter interpreter, List<Object> args) {
+                if (args.get(0) instanceof String) return (double) ((String) args.get(0)).length();
+                else if (args.get(0) instanceof Map) return (double) args.size();
                 else return null;
+            }
+
+            @Override
+            public int argSize() {
+                return 1;
+            }
+        });
+        globals.define("printbyte", new LmaoCallable() {
+            @Override
+            public Object call(Interpreter interpreter, List<Object> args) {
+                Object byt = args.get(0);
+                if (byt instanceof Double) {
+                    if (isInt((double) byt)) {
+                        int b = (int) Math.round((double) byt);
+                        if (b >= 0 && b <= 255) {
+                            System.out.print((char) b);
+                        }
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            public int argSize() {
+                return 1;
+            }
+        });
+        globals.define("int", new LmaoCallable() {
+            @Override
+            public Object call(Interpreter interpreter, List<Object> args) {
+                Object byt = args.get(0);
+                if (byt instanceof String && ((String) byt).length() == 1) {
+                    return (double) ((int) ((String) byt).charAt(0));
+                }
+                return byt;
             }
 
             @Override
@@ -139,9 +206,9 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     @Override
     public Void visitWhileStatement(Statement.While statement) {
         while (isTrue(statement.condition.accept(this))) {
-            statement.statement.accept(this);
-            if (breakFlag) {
-                breakFlag = false;
+            try {
+                statement.statement.accept(this);
+            } catch (Break b) {
                 break;
             }
         }
@@ -150,13 +217,12 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
 
     @Override
     public Void visitBreakStatement(Statement.Break statement) {
-        if (statement.type.type == TokenType.BREAK) breakFlag = true;
-        return null;
+        throw new Break();
     }
 
     @Override
     public Void visitFunctionStatement(Statement.Function statement) {
-        LmaoFunction f = new LmaoFunction(statement);
+        LmaoFunction f = new LmaoFunction(statement, e);
         e.define(f.declaration.name.lex, f);
         return null;
     }
@@ -264,7 +330,7 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
                 if (left == null)
                     return right != null;
                 else if (right == null)
-                    return false;
+                    return true;
                 else return !left.equals(right);
             }
             case MODULO: {
@@ -324,13 +390,39 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
 
     @Override
     public Object visitVariableExpression(@NotNull Expression.Variable expression) {
-        return e.get(expression.name);
+        return lookupVariable(expression, expression.name);
+    }
+
+    private Object lookupVariable(Expression ex, Token name) {
+        Integer depth = locals.get(ex);
+        if (depth != null) {
+            return this.e.getAt(depth, name);
+        }
+        return globals.get(name);
+
     }
 
     @Override
     public Object visitAssignmentExpression(@NotNull Expression.Assignment expression) {
         Object val = expression.value.accept(this);
-        e.assign(expression.variable, val);
+
+        Integer distance = locals.get(expression);
+        if (expression.index == null) {
+            if (distance != null) {
+                e.assignAt(distance, expression.variable, val);
+            } else {
+                globals.assign(expression.variable, val);
+            }
+        } else {
+            Object map = lookupVariable(expression, expression.variable);
+            if (map instanceof Map) {
+                Map var = (Map) map;
+                var.put(expression.index.accept(this), val);
+            } else
+                throw error(expression.variable.line, "at '" + expression.variable.lex + "'", "Only maps are mutable");
+        }
+
+
         return val;
     }
 
@@ -371,6 +463,26 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         return func.call(this, args);
     }
 
+    @Override
+    public Object visitMapExpression(Expression.Map expression) {
+        Object index = expression.index.accept(this);
+        Object pointer = expression.var.accept(this);
+        if (pointer instanceof Map) {
+            return ((Map) pointer).get(index);
+        } else if (pointer instanceof String) {
+            if (!(index instanceof Double && isInt((double) index) && Math.round((double) index) >= 0)) {
+                throw error(expression.nameToken.line, "at '" + expression.nameToken.lex + "' ", "Strings only can only have positive integer indexes");
+            }
+            try {
+                return ((String) pointer).charAt((int) Math.round((double) index)) + "";
+            } catch (StringIndexOutOfBoundsException e) {
+                return null;
+            }
+        } else {
+            throw error(expression.nameToken.line, "at '" + expression.nameToken.lex + "' ", "Not a string or map");
+        }
+    }
+
 
     public boolean isTrue(Object b) {
         if (b == null) return false;
@@ -385,5 +497,8 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         public Return(Object value) {
             this.value = value;
         }
+    }
+
+    public class Break extends RuntimeException {
     }
 }

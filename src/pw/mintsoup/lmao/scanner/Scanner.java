@@ -88,6 +88,14 @@ public class Scanner {
                 addToken(RIGHT_BRACE);
                 break;
             }
+            case '[': {
+                addToken(LEFT_SBRACKET);
+                break;
+            }
+            case ']': {
+                addToken(RIGHT_SBRACKET);
+                break;
+            }
             case ',': {
                 addToken(COMMA);
                 break;

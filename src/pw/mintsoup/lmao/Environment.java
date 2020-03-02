@@ -3,6 +3,7 @@ package pw.mintsoup.lmao;
 import org.jetbrains.annotations.NotNull;
 import pw.mintsoup.lmao.scanner.Token;
 
+import javax.swing.text.html.parser.AttributeList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,6 +11,22 @@ public class Environment {
     public Map<String, Object> vars = new HashMap<>();
 
     public Environment parent;
+
+    public Object getAt(Integer depth, Token name) {
+        return ancestor(depth).vars.get(name.lex);
+    }
+
+    public void assignAt(Integer depth, Token name, Object value) {
+        ancestor(depth).vars.put(name.lex, value);
+    }
+
+    private Environment ancestor(Integer depth) {
+        Environment e = this;
+        for (int i = 0; i < depth; i++) {
+            e = e.parent;
+        }
+        return e;
+    }
 
     class EnvironmentError extends RuntimeException {
     }
