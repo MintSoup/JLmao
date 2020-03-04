@@ -79,6 +79,8 @@ public class Main {
 
         } catch (Parser.ParserError e) {
 
+        }catch(LmaoInstance.InstanceError e){
+
         }
 
 

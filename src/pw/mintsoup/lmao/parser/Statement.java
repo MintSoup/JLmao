@@ -12,6 +12,7 @@ public abstract class Statement{
     R visitBreakStatement(Break statement);
     R visitFunctionStatement(Function statement);
     R visitReturnStatement(Return statement);
+    R visitClassStatement(Class statement);
   }
 public abstract <A> A accept(Visitor<A> visitor);
 public static class EStatement extends Statement{
@@ -107,6 +108,17 @@ this.keyword = keyword;
 }
 public <A> A accept(Visitor<A> visitor){
  return visitor.visitReturnStatement(this);
+}
+}
+public static class Class extends Statement{
+public final Token name;
+public final List<Statement.Function> functions;
+public Class(Token name, List<Statement.Function> functions) {
+this.name = name;
+this.functions = functions;
+}
+public <A> A accept(Visitor<A> visitor){
+ return visitor.visitClassStatement(this);
 }
 }
 }

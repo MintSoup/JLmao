@@ -13,7 +13,6 @@ public class LmaoFunction implements LmaoCallable {
         this.parent = parent;
     }
 
-
     @Override
     public Object call(Interpreter interpreter, List<Object> args) {
         Environment e = new Environment(parent);
@@ -37,5 +36,11 @@ public class LmaoFunction implements LmaoCallable {
     @Override
     public int argSize() {
         return declaration.arguments.size();
+    }
+
+    public LmaoFunction bind(LmaoInstance lmaoInstance) {
+        Environment e = new Environment(parent);
+        e.define("this", lmaoInstance);
+        return new LmaoFunction(declaration, e);
     }
 }

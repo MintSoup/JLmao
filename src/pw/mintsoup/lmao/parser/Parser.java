@@ -40,9 +40,10 @@ public class Parser {
 
             } else if (match(TokenType.FUNC)) {
                 return functionDeclaration("function");
+            } else if (match(TokenType.CLASS)) {
+                return classDeclaration();
             } else {
                 return statement();
-
             }
         } catch (ParserError e) {
             skipStatement();
@@ -50,10 +51,19 @@ public class Parser {
         }
     }
 
-    private Statement functionDeclaration(String type) {
+    private Statement classDeclaration() {
+        Token name = next();
+        consume(TokenType.LEFT_BRACE, "Expected '{' after class declaration");
+        List<Statement.Function> functions = new ArrayList<>();
+        while (match(TokenType.FUNC) && !isAtEnd()) functions.add(functionDeclaration("method"));
+        consume(TokenType.RIGHT_BRACE, "Expected '}' for closing class declaration");
+        return new Statement.Class(name, functions);
+    }
+
+    private Statement.Function functionDeclaration(String type) {
         Token name = consume(TokenType.IDENTIFIER, "Expected identifier for " + type + "declaration");
         consume(TokenType.LEFT_PRNTH, "Expected '(' after" + type + " declaration");
-        List<Token> params = new ArrayList<Token>();
+        List<Token> params = new ArrayList<>();
         if (!match(TokenType.RIGHT_PRNTH)) {
             while (true) {
                 params.add(next());
@@ -63,7 +73,6 @@ public class Parser {
         }
         consume(TokenType.LEFT_BRACE, "Expected '{' after " + type + " declaration");
         List<Statement> body = block();
-
         return new Statement.Function(name, params, body);
     }
 
@@ -115,10 +124,10 @@ public class Parser {
         Expression e;
         if (match(TokenType.SEMICOLON))
             e = null;
-        else
+        else {
             e = expression();
-
-        consume(TokenType.SEMICOLON, "Expected ';' after return statement");
+            consume(TokenType.SEMICOLON, "Expected ';' after return statement");
+        }
         return new Statement.Return(e, tok);
     }
 
@@ -215,12 +224,14 @@ public class Parser {
             if (e instanceof Expression.Variable) {
                 Token name = ((Expression.Variable) e).name;
                 return new Expression.Assignment(name, value, null);
-            }
-            else if (e instanceof Expression.Map){
+            } else if (e instanceof Expression.Map) {
                 Token name = ((Expression.Map) e).nameToken;
                 return new Expression.Assignment(name, value, ((Expression.Map) e).index);
+            } else if (e instanceof Expression.Get) {
+                e = new Expression.Set(((Expression.Get) e).object, ((Expression.Get) e).name, value);
+            } else {
+                error(equals, "Invalid assignment target.");
             }
-            error(equals, "Invalid assignment target.");
         }
 
 
@@ -300,9 +311,10 @@ public class Parser {
         Expression e = primary();
         while (true) {
             if (match(TokenType.LEFT_PRNTH)) e = finishCall(e);
-            if (match(TokenType.LEFT_SBRACKET)) e = finishMap(e, peek(-1));
-
-            else break;
+            else if (match(TokenType.LEFT_SBRACKET)) e = finishMap(e, peek(-1));
+            else if (match(TokenType.DOT)) {
+                e = new Expression.Get(e, consume(TokenType.IDENTIFIER, "Expected identifier after '.'."));
+            } else break;
         }
 
         return e;
@@ -335,9 +347,10 @@ public class Parser {
         else if (match(TokenType.TRUE)) return new Expression.Literal(true);
         else if (match(TokenType.FALSE)) return new Expression.Literal(false);
         else if (match(TokenType.NUL)) return new Expression.Literal(null);
+        else if (match(TokenType.THIS)) return new Expression.This(peek(0));
         else if (match(TokenType.LEFT_PRNTH)) {
             Expression e = expression();
-            consume(TokenType.RIGHT_PRNTH, "Expected '(' after if statement.");
+            consume(TokenType.RIGHT_PRNTH, "Expected ')' after grouping expression.");
             return new Expression.Grouping(e);
         } else if (match(TokenType.IDENTIFIER)) return new Expression.Variable(peek(0));
         throw error(peek(0), "No expression found");

@@ -16,7 +16,6 @@ import java.util.Map;
 
 public class Interpreter implements Expression.Visitor<Object>, Statement.Visitor<Void> {
 
-
     class InterpreterError extends RuntimeException {
     }
 
@@ -229,6 +228,7 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
 
     @Override
     public Void visitReturnStatement(Statement.Return statement) {
+        if(statement.value == null) throw new Return(null);
         throw new Return(statement.value.accept(this));
     }
 
@@ -250,6 +250,18 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     private InterpreterError error(int line, String where, String message) {
         Main.report(line, where, message);
         return new InterpreterError();
+    }
+
+    @Override
+    public Void visitClassStatement(Statement.Class statement) {
+        e.define(statement.name.lex, null);
+        Map<String, LmaoFunction> methods = new HashMap<>();
+        for(Statement.Function f : statement.functions){
+            methods.put(f.name.lex, new LmaoFunction(f, e));
+        }
+        LmaoClass klass = new LmaoClass(statement, methods);
+        e.assign(statement.name, klass);
+        return null;
     }
 
     @Override
@@ -481,6 +493,32 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         } else {
             throw error(expression.nameToken.line, "at '" + expression.nameToken.lex + "' ", "Not a string or map");
         }
+    }
+
+    @Override
+    public Object visitSetExpression(Expression.Set expression) {
+        Object obj = expression.object.accept(this);
+        if (!(obj instanceof LmaoInstance))
+            throw error(expression.name.line, "at '" + expression.name.lex + "'", "Only instances have fields.");
+        else{
+            Object value = expression.value.accept(this);
+            LmaoInstance instance = (LmaoInstance) obj;
+            instance.set(expression.name.lex, value);
+            return value;
+        }
+    }
+
+    @Override
+    public Object visitThisExpression(Expression.This expression) {
+        return lookupVariable(expression, expression.keyword);
+    }
+
+    @Override
+    public Object visitGetExpression(Expression.Get expression) {
+        Object obj = expression.object.accept(this);
+        if (obj instanceof LmaoInstance) {
+            return ((LmaoInstance) obj).get(expression.name);
+        } else throw error(expression.name.line, "at '" + expression.name.lex + "'", "Only instances have properties");
     }
 
 

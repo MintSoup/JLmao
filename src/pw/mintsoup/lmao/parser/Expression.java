@@ -12,6 +12,9 @@ public abstract class Expression{
     R visitLogicalExpression(Logical expression);
     R visitCallExpression(Call expression);
     R visitMapExpression(Map expression);
+    R visitGetExpression(Get expression);
+    R visitSetExpression(Set expression);
+    R visitThisExpression(This expression);
   }
 public abstract <A> A accept(Visitor<A> visitor);
 public static class Binary extends Expression{
@@ -115,6 +118,39 @@ this.nameToken = nameToken;
 }
 public <A> A accept(Visitor<A> visitor){
  return visitor.visitMapExpression(this);
+}
+}
+public static class Get extends Expression{
+public final Expression object;
+public final Token name;
+public Get(Expression object, Token name) {
+this.object = object;
+this.name = name;
+}
+public <A> A accept(Visitor<A> visitor){
+ return visitor.visitGetExpression(this);
+}
+}
+public static class Set extends Expression{
+public final Expression object;
+public final Token name;
+public final Expression value;
+public Set(Expression object, Token name, Expression value) {
+this.object = object;
+this.name = name;
+this.value = value;
+}
+public <A> A accept(Visitor<A> visitor){
+ return visitor.visitSetExpression(this);
+}
+}
+public static class This extends Expression{
+public final Token keyword;
+public This(Token keyword) {
+this.keyword = keyword;
+}
+public <A> A accept(Visitor<A> visitor){
+ return visitor.visitThisExpression(this);
 }
 }
 }

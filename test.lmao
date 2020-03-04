@@ -1,0 +1,11 @@
+class Math{
+    func Math(){
+        this.a = 13;
+        this.b = 18;
+    }
+    func add(){
+        return this.a + this.b;
+    }
+}
+let mathHelper = Math();
+print mathHelper.add();

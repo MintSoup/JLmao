@@ -18,7 +18,10 @@ public class AstGenerator {
                 "Assignment: Token variable, Expression value, Expression index",
                 "Logical: Expression left, Expression right, Token operand",
                 "Call: Expression callee, Token p, List<Expression> arguments",
-                "Map: Expression var, Expression index, Token nameToken"));
+                "Map: Expression var, Expression index, Token nameToken",
+                "Get: Expression object, Token name",
+                "Set: Expression object, Token name, Expression value",
+                "This: Token keyword"));
         defineAST("pw.mintsoup.lmao.parser", "Statement", Arrays.asList("EStatement: Expression e",
                 "Print: Expression e",
                 "Var: Token name, Expression init",
@@ -27,7 +30,8 @@ public class AstGenerator {
                 "While: Expression condition, Statement statement",
                 "Break: Token type",
                 "Function: Token name, List<Token> arguments, List<Statement> statements",
-                "Return: Expression value, Token keyword"
+                "Return: Expression value, Token keyword",
+                "Class: Token name, List<Statement.Function> functions"
         ));
     }
 

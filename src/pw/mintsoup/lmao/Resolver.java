@@ -1,6 +1,5 @@
 package pw.mintsoup.lmao;
 
-import com.sun.corba.se.spi.ior.IdentifiableFactory;
 import pw.mintsoup.lmao.parser.Expression;
 import pw.mintsoup.lmao.parser.Statement;
 import pw.mintsoup.lmao.scanner.Token;
@@ -10,15 +9,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-public class Resolver implements Statement.Visitor<Void>, Expression.Visitor<Object> {
+public class Resolver implements Statement.Visitor<Void>, Expression.Visitor<Void> {
     Interpreter interpreter;
     final Stack<Map<String, Boolean>> scopes;
-    private FunctionType currentFunction = FunctionType.NONE;
     private boolean insideLoop = false;
 
     private enum FunctionType {
-        NONE, FUNCTION
+        NONE, FUNCTION,
+        METHOD,
+        CONSTRUCTOR
     }
+
+    private enum ClassType {
+        NONE, CLASS
+    }
+
+    private FunctionType currentFunction = FunctionType.NONE;
+    private ClassType currentClass = ClassType.NONE;
+
 
     public Resolver(Interpreter interpreter) {
         this.interpreter = interpreter;
@@ -27,31 +35,31 @@ public class Resolver implements Statement.Visitor<Void>, Expression.Visitor<Obj
 
 
     @Override
-    public Object visitBinaryExpression(Expression.Binary expression) {
+    public Void visitBinaryExpression(Expression.Binary expression) {
         resolve(expression.left);
         resolve(expression.right);
         return null;
     }
 
     @Override
-    public Object visitGroupingExpression(Expression.Grouping expression) {
+    public Void visitGroupingExpression(Expression.Grouping expression) {
         resolve(expression.expression);
         return null;
     }
 
     @Override
-    public Object visitLiteralExpression(Expression.Literal expression) {
+    public Void visitLiteralExpression(Expression.Literal expression) {
         return null;
     }
 
     @Override
-    public Object visitUnaryExpression(Expression.Unary expression) {
+    public Void visitUnaryExpression(Expression.Unary expression) {
         resolve(expression.a);
         return null;
     }
 
     @Override
-    public Object visitVariableExpression(Expression.Variable expression) {
+    public Void visitVariableExpression(Expression.Variable expression) {
         if (!scopes.isEmpty() && scopes.peek().get(expression.name) == Boolean.FALSE) {
             Main.error(expression.name.line, "Cannot access local variable in its own initializer");
         }
@@ -70,7 +78,7 @@ public class Resolver implements Statement.Visitor<Void>, Expression.Visitor<Obj
     }
 
     @Override
-    public Object visitAssignmentExpression(Expression.Assignment expression) {
+    public Void visitAssignmentExpression(Expression.Assignment expression) {
         resolveLocal(expression, expression.variable);
         if (expression.index != null)
             resolve(expression.index);
@@ -79,14 +87,14 @@ public class Resolver implements Statement.Visitor<Void>, Expression.Visitor<Obj
     }
 
     @Override
-    public Object visitLogicalExpression(Expression.Logical expression) {
+    public Void visitLogicalExpression(Expression.Logical expression) {
         resolve(expression.left);
         resolve(expression.right);
         return null;
     }
 
     @Override
-    public Object visitCallExpression(Expression.Call expression) {
+    public Void visitCallExpression(Expression.Call expression) {
         resolve(expression.callee);
         for (Expression e : expression.arguments) {
             resolve(e);
@@ -95,7 +103,23 @@ public class Resolver implements Statement.Visitor<Void>, Expression.Visitor<Obj
     }
 
     @Override
-    public Object visitMapExpression(Expression.Map expression) {
+    public Void visitMapExpression(Expression.Map expression) {
+        resolve(expression.var);
+        resolve(expression.index);
+        return null;
+    }
+
+    @Override
+    public Void visitSetExpression(Expression.Set expression) {
+        resolve(expression.value);
+        resolve(expression.value);
+        resolve(expression.object);
+        return null;
+    }
+
+    @Override
+    public Void visitGetExpression(Expression.Get expression) {
+        resolve(expression.object);
         return null;
     }
 
@@ -154,6 +178,15 @@ public class Resolver implements Statement.Visitor<Void>, Expression.Visitor<Obj
 
     private void beginScope() {
         scopes.push(new HashMap<String, Boolean>());
+    }
+
+    @Override
+    public Void visitThisExpression(Expression.This expression) {
+        if ((currentFunction != FunctionType.METHOD && currentFunction != FunctionType.CONSTRUCTOR) || currentClass == ClassType.NONE) {
+            Main.error(expression.keyword.line, "Using this outside method");
+        }
+        resolveLocal(expression, expression.keyword);
+        return null;
     }
 
     public void resolve(List<Statement> statements) {
@@ -217,7 +250,29 @@ public class Resolver implements Statement.Visitor<Void>, Expression.Visitor<Obj
         if (currentFunction == FunctionType.NONE) {
             Main.error(statement.keyword.line, "Return outside function");
         }
+        else if (currentFunction == FunctionType.CONSTRUCTOR) {
+            Main.error(statement.keyword.line, "Cannot return from constructor");
+        }
         if (statement.value != null) resolve(statement.value);
+        return null;
+    }
+
+    @Override
+    public Void visitClassStatement(Statement.Class statement) {
+        ClassType enclosingClass = currentClass;
+        currentClass = ClassType.CLASS;
+        declare(statement.name);
+        define(statement.name);
+        beginScope();
+        scopes.peek().put("this", true);
+
+        for (Statement.Function f : statement.functions) {
+            if (!f.name.lex.equals(statement.name.lex))
+                resolveFunction(f, FunctionType.METHOD);
+            else resolveFunction(f, FunctionType.CONSTRUCTOR);
+        }
+        endScope();
+        currentClass = enclosingClass;
         return null;
     }
 }
